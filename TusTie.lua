@@ -4,7 +4,6 @@ local enabled = true
 local label = nil
 local guiTimer = 0
 
--- Hàm tạo GUI
 local function createGui()
     local screenGui = plr.PlayerGui:FindFirstChild("ReachDisplay")
     if not screenGui then
@@ -27,7 +26,6 @@ local function createGui()
     end
 end
 
--- Hiện GUI tạm thời
 local function showGui()
     createGui()
     if label then
@@ -37,7 +35,6 @@ local function showGui()
     end
 end
 
--- Tìm kiếm Handle kiếm
 local function getHandle()
     if plr.Character then
         local tool = plr.Character:FindFirstChildOfClass("Tool")
@@ -48,7 +45,6 @@ local function getHandle()
     return nil, nil
 end
 
--- Gây sát thương nếu raycast trúng
 local function tryHit()
     if not enabled then return end
     local handle = getHandle()
@@ -72,7 +68,6 @@ local function tryHit()
     end
 end
 
--- Phím bấm để chỉnh reach
 game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.End then
@@ -84,10 +79,8 @@ game:GetService("UserInputService").InputBegan:Connect(function(input, gameProce
     end
 end)
 
--- Tự động ẩn GUI sau 2 giây
 game:GetService("RunService").RenderStepped:Connect(function()
     pcall(tryHit)
-
     if label and label.Visible and tick() - guiTimer > 2 then
         label.Visible = false
     end
