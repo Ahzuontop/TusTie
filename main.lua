@@ -1,54 +1,76 @@
+-- Script Roblox có tích hợp bảng nhập key + gửi log về webhook qua proxy
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
-local plr = Players.LocalPlayer
 
-local KEY = "DracoUsinghb"
-local WEBHOOK = "https://discord.com/api/webhooks/1359549934910574835/aQaUQPln8JBJlVWBeAo_fSEGhTpuYqOe8MCEEItqMxfY0oYDNdmggb09X2R4k65Rl9ct"
+local player = Players.LocalPlayer
 
--- GUI nhập key
-local function createKeyGui()
-    local gui = Instance.new("ScreenGui", plr:WaitForChild("PlayerGui"))
-    gui.Name = "KeyInputGui"
+-- Config
+local CORRECT_KEY = "DracoUsinghb"
+local WEBHOOK_PROXY = "https://WebhookProxy.trananhyus.repl.co/send"
 
-    local frame = Instance.new("Frame", gui)
-    frame.Size = UDim2.new(0, 300, 0, 140)
-    frame.Position = UDim2.new(0.5, -150, 0.5, -70)
-    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+-- Gửi log về Discord qua webhook proxy
+local function sendLog(keyUsed)
+    local data = {
+        username = player.Name,
+        userid = player.UserId,
+        key = keyUsed,
+        executor = identifyexecutor and identifyexecutor() or "Unknown"
+    }
+
+    pcall(function()
+        HttpService:PostAsync(WEBHOOK_PROXY, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson)
+    end)
+end
+
+-- Bảng nhập key
+local function createKeyUI()
+    local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+    screenGui.Name = "KeyUI"
+
+    local frame = Instance.new("Frame", screenGui)
+    frame.Size = UDim2.new(0, 300, 0, 150)
+    frame.Position = UDim2.new(0.5, -150, 0.5, -75)
+    frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     frame.BorderSizePixel = 0
 
-    local textBox = Instance.new("TextBox", frame)
-    textBox.Size = UDim2.new(0.8, 0, 0.3, 0)
-    textBox.Position = UDim2.new(0.1, 0, 0.15, 0)
-    textBox.PlaceholderText = "Enter Key..."
-    textBox.Text = ""
-    textBox.ClearTextOnFocus = false
-    textBox.TextColor3 = Color3.new(1, 1, 1)
-    textBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    local textbox = Instance.new("TextBox", frame)
+    textbox.Size = UDim2.new(1, -20, 0, 40)
+    textbox.Position = UDim2.new(0, 10, 0, 10)
+    textbox.PlaceholderText = "Nhập key tại đây..."
+    textbox.Text = ""
+    textbox.TextSize = 18
+    textbox.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    textbox.TextColor3 = Color3.fromRGB(255, 255, 255)
 
-    local submit = Instance.new("TextButton", frame)
-    submit.Size = UDim2.new(0.5, 0, 0.3, 0)
-    submit.Position = UDim2.new(0.25, 0, 0.6, 0)
-    submit.Text = "Submit"
-    submit.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
-    submit.TextColor3 = Color3.new(1, 1, 1)
+    local button = Instance.new("TextButton", frame)
+    button.Size = UDim2.new(1, -20, 0, 40)
+    button.Position = UDim2.new(0, 10, 0, 60)
+    button.Text = "Xác minh"
+    button.TextSize = 18
+    button.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
 
-    submit.MouseButton1Click:Connect(function()
-        local inputKey = textBox.Text
-        -- Gửi webhook
-        pcall(function()
-            HttpService:PostAsync(WEBHOOK, HttpService:JSONEncode({
-                content = "**UserId:** " .. plr.UserId .. " | **Key:** " .. inputKey
-            }))
-        end)
-        -- Kiểm tra key
-        if inputKey == KEY then
-            gui:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Ahzuontop/TusTie/main/tustie.lua"))()
+    local status = Instance.new("TextLabel", frame)
+    status.Size = UDim2.new(1, -20, 0, 30)
+    status.Position = UDim2.new(0, 10, 0, 110)
+    status.BackgroundTransparency = 1
+    status.TextColor3 = Color3.fromRGB(255, 255, 255)
+    status.Text = ""
+    status.TextSize = 16
+
+    button.MouseButton1Click:Connect(function()
+        local inputKey = textbox.Text
+        sendLog(inputKey)
+        if inputKey == CORRECT_KEY then
+            screenGui:Destroy()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/Ahzuontop/TusTie/main/script.lua"))()
         else
-            plr:Kick("Dumb Kid Draco Using Hitbox")
+            status.Text = "Sai key!"
+            task.wait(1)
+            player:Kick("Dumb Kid Draco Using Hitbox")
         end
     end)
 end
 
-createKeyGui()
+createKeyUI()
