@@ -1,55 +1,94 @@
+local plr = game.Players.LocalPlayer
+local reach = 6
+local enabled = true
+local label = nil
+local guiTimer = 0
 
-local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
-local StarterGui = game:GetService("StarterGui")
-local plr = Players.LocalPlayer
+-- Hàm tạo GUI
+local function createGui()
+    local screenGui = plr.PlayerGui:FindFirstChild("ReachDisplay")
+    if not screenGui then
+        screenGui = Instance.new("ScreenGui")
+        screenGui.Name = "ReachDisplay"
+        screenGui.ResetOnSpawn = false
+        screenGui.Parent = plr:WaitForChild("PlayerGui")
+    end
 
-local KEY = "DracoUsinghb"
-local WEBHOOK = "https://WebhookProxy.trananhyus.repl.co/forward"
-
--- GUI nhập key
-local function createKeyGui()
-    local gui = Instance.new("ScreenGui", plr:WaitForChild("PlayerGui"))
-    gui.Name = "KeyInputGui"
-
-    local frame = Instance.new("Frame", gui)
-    frame.Size = UDim2.new(0, 300, 0, 140)
-    frame.Position = UDim2.new(0.5, -150, 0.5, -70)
-    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    frame.BorderSizePixel = 0
-
-    local textBox = Instance.new("TextBox", frame)
-    textBox.Size = UDim2.new(0.8, 0, 0.3, 0)
-    textBox.Position = UDim2.new(0.1, 0, 0.15, 0)
-    textBox.PlaceholderText = "Enter Key..."
-    textBox.Text = ""
-    textBox.ClearTextOnFocus = false
-    textBox.TextColor3 = Color3.new(1, 1, 1)
-    textBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-
-    local submit = Instance.new("TextButton", frame)
-    submit.Size = UDim2.new(0.5, 0, 0.3, 0)
-    submit.Position = UDim2.new(0.25, 0, 0.6, 0)
-    submit.Text = "Submit"
-    submit.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
-    submit.TextColor3 = Color3.new(1, 1, 1)
-
-    submit.MouseButton1Click:Connect(function()
-        local inputKey = textBox.Text
-        -- Gửi webhook qua proxy
-        pcall(function()
-            HttpService:PostAsync(WEBHOOK, HttpService:JSONEncode({
-                content = "**UserId:** " .. plr.UserId .. " | **Key:** " .. inputKey
-            }))
-        end)
-        -- Kiểm tra key
-        if inputKey == KEY then
-            gui:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Ahzuontop/TusTie/main/reach.lua"))()
-        else
-            plr:Kick("Dumb Kid Draco Using Hitbox")
-        end
-    end)
+    if not label then
+        label = Instance.new("TextLabel")
+        label.Size = UDim2.new(0, 200, 0, 40)
+        label.Position = UDim2.new(0, 10, 0, 10)
+        label.BackgroundTransparency = 0.4
+        label.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        label.Font = Enum.Font.SourceSansBold
+        label.TextScaled = true
+        label.Parent = screenGui
+    end
 end
 
-createKeyGui()
+-- Hiện GUI tạm thời
+local function showGui()
+    createGui()
+    if label then
+        label.Text = "Reach: " .. reach .. " (Anh Tú)"
+        label.Visible = true
+        guiTimer = tick()
+    end
+end
+
+-- Tìm kiếm Handle kiếm
+local function getHandle()
+    if plr.Character then
+        local tool = plr.Character:FindFirstChildOfClass("Tool")
+        if tool then
+            return tool:FindFirstChild("Handle"), tool
+        end
+    end
+    return nil, nil
+end
+
+-- Gây sát thương nếu raycast trúng
+local function tryHit()
+    if not enabled then return end
+    local handle = getHandle()
+    if not handle then return end
+
+    local origin = handle.Position
+    local direction = handle.CFrame.LookVector * reach
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterDescendantsInstances = {plr.Character}
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.IgnoreWater = true
+
+    local result = workspace:Raycast(origin, direction, raycastParams)
+    if result and result.Instance then
+        local part = result.Instance
+        local humanoid = part:FindFirstAncestorOfClass("Model") and part:FindFirstAncestorOfClass("Model"):FindFirstChildOfClass("Humanoid")
+        if humanoid and humanoid.Parent ~= plr.Character then
+            firetouchinterest(part, handle, 0)
+            firetouchinterest(part, handle, 1)
+        end
+    end
+end
+
+-- Phím bấm để chỉnh reach
+game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.End then
+        reach = reach + 0.5
+        showGui()
+    elseif input.KeyCode == Enum.KeyCode.Delete then
+        reach = math.max(1, reach - 0.5)
+        showGui()
+    end
+end)
+
+-- Tự động ẩn GUI sau 2 giây
+game:GetService("RunService").RenderStepped:Connect(function()
+    pcall(tryHit)
+
+    if label and label.Visible and tick() - guiTimer > 2 then
+        label.Visible = false
+    end
+end)
